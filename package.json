@@ -16,6 +16,14 @@
     "build": "npm run webpack -- -p --env production && npm run babel -- src --out-dir dist --source-maps inline",
     "postinstall": "npm run build"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shadow-doct0r/picturama.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shadow-doct0r/picturama/issues"
+  },
+  "homepage": "https://github.com/shadow-doct0r/picturama#readme",
   "author": "Andrii Pechera, Denis Ratenok",
   "license": "ISC",
   "dependencies": {
