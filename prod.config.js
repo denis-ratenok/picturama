@@ -1,18 +1,13 @@
 const path = require('path');
-const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
-
 module.exports = {
-  mode: process.env.NODE_ENV || 'development',
-  devtool: 'source-map',
+  mode: 'production',
   resolve: {
     extensions: ['.js', '.jsx'],
   },
   entry: [
-    'react-hot-loader/patch',
     path.join(__dirname, 'src', 'client', 'index.jsx'),
-    'webpack-hot-middleware/client',
   ],
   module: {
     rules: [
@@ -38,10 +33,7 @@ module.exports = {
     filename: 'client.js',
   },
   plugins: [
-    new webpack.NamedModulesPlugin(),
-    new webpack.HotModuleReplacementPlugin(),
     new HtmlWebpackPlugin({
-      title: 'Picturama',
       template: path.join(__dirname, 'src', 'client', 'template.html'),
     }),
   ],
