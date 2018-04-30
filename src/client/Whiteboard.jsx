@@ -19,7 +19,6 @@ export default class Picturama extends React.Component {
   state = {
     activeDrags: 0,
     inputURL: '',
-    boxStyle: { width: '200px', heigth: '200px', cursor: 'move' },
     images: [],
     coordinates: {},
   };
@@ -62,13 +61,11 @@ export default class Picturama extends React.Component {
   };
 
   renderImg = ({ url, id }) => {
-    const dragHandlers = { onStart: this.onStart, onStop: this.onStop };
-    const { boxStyle } = this.state;
+    const boxStyle = { width: '200px', heigth: '200px', cursor: 'move' };
     const position = this.state.coordinates[id];
     return (
       <Draggable
         key={id}
-        {...dragHandlers}
         onStart={this.onStart}
         onStop={this.onStop}
         onDrag={this.onControlledDrag(id)}
