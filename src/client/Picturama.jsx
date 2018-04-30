@@ -1,30 +1,17 @@
-import io from 'socket.io-client';
 import React from 'react';
+import Whiteboard from './Whiteboard.jsx';
 
-const SRV_URL = 'http://localhost:3000';
 
 export default class Picturama extends React.Component {
-  state = { msg: '', input: '' };
-  socket = io.connect(SRV_URL, { reconnection: false })
-    .on('hi', msg => this.setState({ ...this.state, msg }));
-
-  changeInput = ({ target: { value } }) => this.setState({ ...this.state, input: value });
-
-  setNewMsg = (e) => {
-    e.preventDefault();
-    const { input } = this.state;
-    this.socket.emit('new', input);
-    this.setState({ msg: input, input: '' });
+  state = {
+    userName: 'rick',
   };
 
   render() {
     return (
       <div className="container">
-        <h2>{this.state.msg}</h2>
-        <form onSubmit={this.setNewMsg} className="form-inline">
-          <input type="text" className="form-control" value={this.state.input} onChange={this.changeInput}/>
-          <button type="submit" className="btn btn-primary">Set</button>
-        </form>
+        <h2>Drag</h2>
+        <Whiteboard user={this.state.userName}/>
       </div>
     );
   }
