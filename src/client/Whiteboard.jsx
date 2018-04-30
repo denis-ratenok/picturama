@@ -4,13 +4,13 @@ import Draggable from 'react-draggable';
 
 const SRV_URL = 'http://localhost:3000';
 
-const getThrottled = (callback, delay) => {
+const getThrottled = (socket, delay) => {
   let previousCall = new Date().getTime();
   return (...args) => {
     const time = new Date().getTime();
     if ((time - previousCall) >= delay) {
       previousCall = time;
-      callback(...args);
+      socket.emit(...args);
     }
   };
 };
@@ -42,11 +42,14 @@ export default class Picturama extends React.Component {
     this.setState({ activeDrags: this.state.activeDrags - 1 });
   };
 
-  onControlledDrag = id => (e, position) => {
-    const { coordinates } = this.state;
-    const { x, y } = position;
-    this.setState({ coordinates: { ...coordinates, [id]: { x, y } } });
-    getThrottled(this.socket.emit('drag', { [id]: { x, y } }), 20)();
+  onControlledDrag = (id, delay = 15) => {
+    const throttledEmit = getThrottled(this.socket, delay);
+    return (e, position) => {
+      const { coordinates } = this.state;
+      const { x, y } = position;
+      this.setState({ coordinates: { ...coordinates, [id]: { x, y } } });
+      throttledEmit('drag', { [id]: { x, y } });
+    };
   };
 
   onInput = (e) => {
@@ -77,7 +80,7 @@ export default class Picturama extends React.Component {
             className="img-fluid"
             draggable="false"
             src={url}
-            alt="rick"/>
+          />
         </div>
       </Draggable>
     );
