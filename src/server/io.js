@@ -11,11 +11,13 @@ export default (server) => {
   io.on('connection', (socket) => {
     sockets.push(socket);
     socket.on('new', (url) => {
-      socket.emit('new', { id: uniqueId(), url });
-      socket.broadcast.emit('new', { id: uniqueId(), url });
+      const id = uniqueId();
+      socket.emit('new', { id, url });
+      socket.broadcast.emit('new', { id, url });
     });
     socket.on('drag', (imgPosition) => {
-      socket.broadcast.emit('drag', imgPosition);
+      // console.log(imgPosition);
+      socket.broadcast.emit('dragsrv', imgPosition);
     });
     socket.on('disconnect', () => {
       sockets = sockets.filter(s => s !== socket);

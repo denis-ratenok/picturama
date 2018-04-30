@@ -31,7 +31,9 @@ export default class Picturama extends React.Component {
         coordinates: { ...coordinates, [img.id]: { x: 200, y: 200 } },
       });
     })
-    .on('drag', imgPosition => this.setState({ coordinates: { ...this.coordinates, ...imgPosition } }));
+    .on('dragsrv', (imgPosition) => {
+      this.setState({ coordinates: { ...this.coordinates, ...imgPosition } });
+    });
 
   onStart = () => {
     this.setState({ activeDrags: this.state.activeDrags + 1 });
@@ -41,13 +43,11 @@ export default class Picturama extends React.Component {
     this.setState({ activeDrags: this.state.activeDrags - 1 });
   };
 
-  throttledEmit = getThrottled(this.socket.emit, 20);
-
   onControlledDrag = id => (e, position) => {
     const { coordinates } = this.state;
     const { x, y } = position;
     this.setState({ coordinates: { ...coordinates, [id]: { x, y } } });
-    this.throttledEmit('drag', { [id]: { x, y } });
+    getThrottled(this.socket.emit('drag', { [id]: { x, y } }), 20)();
   };
 
   onInput = (e) => {
