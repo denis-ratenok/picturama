@@ -21,17 +21,25 @@ export default class Picturama extends React.Component {
     inputURL: '',
     images: [],
     coordinates: {},
+    minSizeBoard: 0,
   };
   socket = io.connect(SRV_URL, { reconnection: false })
     .on('new', (img) => {
       const { images, coordinates } = this.state;
       this.setState({
         images: [...images, img],
-        coordinates: { ...coordinates, [img.id]: { x: 200, y: 200 } },
+        coordinates: { ...coordinates, [img.id]: { x: 0, y: 0 } },
       });
     })
-    .on('dragsrv', (imgPosition) => {
-      this.setState({ coordinates: { ...this.coordinates, ...imgPosition } });
+    .on('dragsrv', (imgPositionPct) => {
+      const imgPosition = JSON.parse(imgPositionPct);
+      const id = Object.keys(imgPosition)[0];
+      const { xPct, yPct } = imgPosition[id];
+      const x = (xPct * this.state.minSizeBoard) / 100;
+      const y = (yPct * this.state.minSizeBoard) / 100;
+      const position = {};
+      position[id] = { x, y };
+      this.setState({ coordinates: { ...this.coordinates, ...position } });
     });
 
   onStart = () => {
@@ -48,7 +56,10 @@ export default class Picturama extends React.Component {
       const { coordinates } = this.state;
       const { x, y } = position;
       this.setState({ coordinates: { ...coordinates, [id]: { x, y } } });
-      throttledEmit('drag', { [id]: { x, y } });
+      const xPct = (100 * x) / this.state.minSizeBoard;
+      const yPct = (100 * y) / this.state.minSizeBoard;
+      throttledEmit('drag', { [id]: { xPct, yPct } });
+      console.log(coordinates);
     };
   };
 
@@ -64,7 +75,7 @@ export default class Picturama extends React.Component {
   };
 
   renderImg = ({ url, id }) => {
-    const boxStyle = { width: '200px', heigth: '200px', cursor: 'move' };
+    const boxStyle = { width: '28%', heigth: '28%', cursor: 'move' };
     const position = this.state.coordinates[id];
     return (
       <Draggable
@@ -86,6 +97,34 @@ export default class Picturama extends React.Component {
     );
   };
 
+  componentDidMount() {
+    this.setState({
+      minSizeBoard: Math.min(
+        document.documentElement.clientWidth * 0.75,
+        document.documentElement.clientHeight * 0.75,
+      ),
+    });
+    window.onresize = () => {
+      Object.keys(this.state.coordinates).forEach((img) => {
+        console.log(this.state.coordinates[img]);
+        this.state.coordinates[img].x = (this.state.coordinates[img].x * Math.min(
+          document.documentElement.clientWidth * 0.75,
+          document.documentElement.clientHeight * 0.75,
+        )) / this.state.minSizeBoard;
+        this.state.coordinates[img].y = (this.state.coordinates[img].y * Math.min(
+          document.documentElement.clientWidth * 0.75,
+          document.documentElement.clientHeight * 0.75,
+        )) / this.state.minSizeBoard;
+      });
+      this.setState({
+        minSizeBoard: Math.min(
+          document.documentElement.clientWidth * 0.75,
+          document.documentElement.clientHeight * 0.75,
+        ),
+      });
+    };
+  }
+
   render() {
     return (
       <div>
@@ -94,7 +133,10 @@ export default class Picturama extends React.Component {
           <input type="text" value={this.state.inputURL} onChange={this.onInput}/>
           <button className="btn btn-primary">Add</button>
         </form>
-        <div className="rounded border position-relative" style={{ width: '700px', height: '700px' }}>
+        <div className="rounded border position-relative" style={{
+          width: this.state.minSizeBoard + 'px',
+          height:this.state.minSizeBoard + 'px',
+        }}>
           {this.state.images.map(this.renderImg)}
         </div>
       </div>

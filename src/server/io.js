@@ -16,8 +16,13 @@ export default (server) => {
       socket.broadcast.emit('new', { id, url });
     });
     socket.on('drag', (imgPosition) => {
-      // console.log(imgPosition);
-      socket.broadcast.emit('dragsrv', imgPosition);
+      const { xPct, yPct } = imgPosition[Object.keys(imgPosition)[0]];
+      const id = Object.keys(imgPosition)[0];
+      const imgPositionPct = {};
+      imgPositionPct[id] = { xPct, yPct };
+      console.log(JSON.stringify(imgPositionPct));
+
+      socket.broadcast.emit('dragsrv', JSON.stringify(imgPositionPct));
     });
     socket.on('disconnect', () => {
       sockets = sockets.filter(s => s !== socket);
