@@ -15,6 +15,13 @@ const getThrottled = (socket, delay) => {
   };
 };
 
+function findMinSizeBoard() {
+  return Math.min(
+    document.documentElement.clientWidth * 0.75,
+    document.documentElement.clientHeight * 0.75,
+  );
+}
+
 export default class Picturama extends React.Component {
   state = {
     activeDrags: 0,
@@ -22,6 +29,7 @@ export default class Picturama extends React.Component {
     images: [],
     coordinates: {},
     minSizeBoard: 0,
+    idImgSelected: null,
   };
   socket = io.connect(SRV_URL, { reconnection: false })
     .on('new', (img) => {
@@ -30,6 +38,20 @@ export default class Picturama extends React.Component {
         images: [...images, img],
         coordinates: { ...coordinates, [img.id]: { x: 0, y: 0 } },
       });
+    })
+    .on('select', ({ user, idImg }) => {
+      console.log(user);
+      const img = document.querySelector(`img[id='${idImg}']`).parentElement;
+      img.style.border = `2px solid ${user.color}`;
+      if (user.login === this.props.user.login) {
+        this.setState({
+          idImgSelected: idImg,
+        });
+      }
+    })
+    .on('unSelect', (idImg) => {
+      const img = document.querySelector(`img[id='${idImg}']`).parentElement;
+      img.style.border = 'none';
     })
     .on('dragsrv', (imgPositionPct) => {
       const imgPosition = JSON.parse(imgPositionPct);
@@ -59,7 +81,6 @@ export default class Picturama extends React.Component {
       const xPct = (100 * x) / this.state.minSizeBoard;
       const yPct = (100 * y) / this.state.minSizeBoard;
       throttledEmit('drag', { [id]: { xPct, yPct } });
-      console.log(coordinates);
     };
   };
 
@@ -85,61 +106,83 @@ export default class Picturama extends React.Component {
         onDrag={this.onControlledDrag(id)}
         position={position}
         bounds="parent"
+        disabled={ this.state.idImgSelected !== id }
       >
-        <div style={boxStyle} className="border">
+        <div style={boxStyle}>
           <img
+            id={id}
             className="img-fluid"
             draggable="false"
             src={url}
+            onMouseDown={this.handleSelect}
           />
         </div>
       </Draggable>
     );
   };
-
-  componentDidMount() {
-    this.setState({
-      minSizeBoard: Math.min(
-        document.documentElement.clientWidth * 0.75,
-        document.documentElement.clientHeight * 0.75,
-      ),
-    });
-    window.onresize = () => {
-      Object.keys(this.state.coordinates).forEach((img) => {
-        console.log(this.state.coordinates[img]);
-        this.state.coordinates[img].x = (this.state.coordinates[img].x * Math.min(
-          document.documentElement.clientWidth * 0.75,
-          document.documentElement.clientHeight * 0.75,
-        )) / this.state.minSizeBoard;
-        this.state.coordinates[img].y = (this.state.coordinates[img].y * Math.min(
-          document.documentElement.clientWidth * 0.75,
-          document.documentElement.clientHeight * 0.75,
-        )) / this.state.minSizeBoard;
+  handleSelect = ({ target }) => {
+    if (this.props.user.login) {
+      const idImg = target.id;
+      if (idImg !== this.state.idImgSelected) {
+        console.log(idImg);
+        this.socket.emit('select', {
+          user: this.props.user,
+          idImg,
+        });
+      }
+    }
+  };
+  unSelect = () => {
+    if (this.state.idImgSelected) {
+      const img = document.querySelector(`img[id='${this.state.idImgSelected}']`).parentElement;
+      img.style.border = 'none';
+      this.socket.emit('unSelect', {
+        user: this.props.user,
+        idImg: this.state.idImgSelected,
       });
       this.setState({
-        minSizeBoard: Math.min(
-          document.documentElement.clientWidth * 0.75,
-          document.documentElement.clientHeight * 0.75,
-        ),
+        idImgSelected: null,
+      });
+    }
+  };
+  componentDidMount() {
+    this.setState({
+      minSizeBoard: findMinSizeBoard(),
+    });
+    window.onresize = () => {
+      const coordinates = [];
+      Object.keys(this.state.coordinates).forEach((img) => {
+        const imgX = (this.state.coordinates[img].x * findMinSizeBoard()) / this.state.minSizeBoard;
+        const imgY = (this.state.coordinates[img].y * findMinSizeBoard()) / this.state.minSizeBoard;
+        coordinates.push({ img: { imgX, imgY } });
+        this.setState({ ...coordinates });
+      });
+      this.setState({
+        minSizeBoard: findMinSizeBoard(),
       });
     };
   }
-
   render() {
+    const { user } = this.props;
+    const { minSizeBoard, images } = this.state;
     return (
       <div>
-        <h4>{this.props.user}</h4>
+        <h4 style={{ color: user.color }}>{user.login}</h4>
         <form className="inline-form" onSubmit={this.addImg}>
           <input type="text" value={this.state.inputURL} onChange={this.onInput}/>
           <button className="btn btn-primary">Add</button>
         </form>
         <div className="rounded border position-relative" style={{
-          width: this.state.minSizeBoard + 'px',
-          height:this.state.minSizeBoard + 'px',
-        }}>
-          {this.state.images.map(this.renderImg)}
+          width: `${minSizeBoard}px`,
+          height: `${minSizeBoard}px`,
+        }}
+        >
+          {images.map(this.renderImg)}
         </div>
+        <br/>
+        <button onClick={this.unSelect} className="btn btn-primary">UnSelect</button>
       </div>
     );
   }
 }
+

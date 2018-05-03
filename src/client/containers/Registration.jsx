@@ -1,20 +1,30 @@
 import React from 'react';
 
-export default function Registration(props) {
-  return (
-    <div className="container">
-      <form>
-        <div className="form-group row">
-          <label htmlFor="inputEmail3" className="col-sm-2 col-form-label">Email</label>
-          <div className="col-sm-10">
-            <input type="email" className="form-control" id="inputEmail3" placeholder="Email">
-          </div>
-        </div>
-        <div className="form-group row">
-          <label htmlFor="inputPassword3" className="col-sm-2 col-form-label">Password</label>
-          <div className="col-sm-10">
-            <input type="password" className="form-control" id="inputPassword3" placeholder="Password">
-          </div>
-        </div>
-  )
+export default class Registration extends React.Component {
+  constructor(props) {
+    super(props);
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  handleSubmit(event) {
+    this.props.onFormSubmit(event);
+  }
+
+  handleChange(event) {
+    this.props.onLoginChange(event);
+  }
+
+  render() {
+    const { valueLogin } = this.props;
+    return (
+      <form id="publish" className="form-inline" onSubmit={this.handleSubmit} >
+        <label>
+          Name:
+          <input type="text" value={valueLogin} onChange={this.handleChange} />
+        </label>
+        <input type="submit" value="Submit" className="btn btn-primary" />
+      </form>
+    );
+  }
 }
