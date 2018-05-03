@@ -1,6 +1,7 @@
 import io from 'socket.io-client';
 import React from 'react';
 import Draggable from 'react-draggable';
+// import Dropzone from 'react-dropzone';
 
 const SRV_URL = 'http://localhost:3000';
 
@@ -18,7 +19,7 @@ const getThrottled = (socket, delay) => {
 export default class Picturama extends React.Component {
   state = {
     activeDrags: 0,
-    inputURL: '',
+    file: null,
     images: [],
     coordinates: {},
   };
@@ -54,13 +55,21 @@ export default class Picturama extends React.Component {
 
   onInput = (e) => {
     e.preventDefault();
-    this.setState({ inputURL: e.target.value });
+    this.setState({ file: e.target.files[0] });
   };
 
   addImg = (e) => {
     e.preventDefault();
-    this.socket.emit('new', this.state.inputURL);
-    this.setState({ inputURL: '' });
+    const formData = new FormData();
+    formData.append('image', this.state.file);
+    fetch(`${SRV_URL}/upload`, {
+      method: 'POST',
+      body: formData,
+    }).then(res => res.json())
+      .then(({ $loki }) => {
+        this.socket.emit('new', { id: $loki, url: `${SRV_URL}/images/${$loki}` });
+        this.setState({ file: null });
+      });
   };
 
   renderImg = ({ url, id }) => {
@@ -89,9 +98,13 @@ export default class Picturama extends React.Component {
   render() {
     return (
       <div>
+        {/* eslint-disable-next-line */}
         <h4>{this.props.user}</h4>
         <form className="inline-form" onSubmit={this.addImg}>
-          <input type="text" value={this.state.inputURL} onChange={this.onInput}/>
+          <div className="form-group">
+            <label htmlFor="imageInput">File input</label>
+            <input type="file" className="form-control-file" id="imageInput" name="image" onChange={this.onInput} required/>
+          </div>
           <button className="btn btn-primary">Add</button>
         </form>
         <div className="rounded border position-relative" style={{ width: '700px', height: '700px' }}>
