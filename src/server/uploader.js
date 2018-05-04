@@ -43,7 +43,7 @@ export default (db) => {
       return;
     }
     res.setHeader('Content-Type', img.mimetype);
-    res.sendfile(img.path);
+    res.sendFile(img.path);
   });
 
   return router;

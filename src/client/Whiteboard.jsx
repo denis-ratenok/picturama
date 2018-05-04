@@ -1,7 +1,7 @@
 import io from 'socket.io-client';
 import React from 'react';
 import Draggable from 'react-draggable';
-// import Dropzone from 'react-dropzone';
+import Dropzone from 'react-dropzone';
 
 const SRV_URL = 'http://localhost:3000';
 
@@ -18,8 +18,6 @@ const getThrottled = (socket, delay) => {
 
 export default class Picturama extends React.Component {
   state = {
-    activeDrags: 0,
-    file: null,
     images: [],
     coordinates: {},
   };
@@ -35,13 +33,13 @@ export default class Picturama extends React.Component {
       this.setState({ coordinates: { ...this.coordinates, ...imgPosition } });
     });
 
-  onStart = () => {
-    this.setState({ activeDrags: this.state.activeDrags + 1 });
-  };
+  // onStart = () => {
+  //   this.setState({ activeDrags: this.state.activeDrags + 1 });
+  // };
 
-  onStop = () => {
-    this.setState({ activeDrags: this.state.activeDrags - 1 });
-  };
+  // onStop = () => {
+  //   this.setState({ activeDrags: this.state.activeDrags - 1 });
+  // };
 
   onControlledDrag = (id, delay = 15) => {
     const throttledEmit = getThrottled(this.socket, delay);
@@ -53,22 +51,20 @@ export default class Picturama extends React.Component {
     };
   };
 
-  onInput = (e) => {
-    e.preventDefault();
-    this.setState({ file: e.target.files[0] });
-  };
+  // onInput = (e) => {
+  //   e.preventDefault();
+  //   this.setState({ file: e.target.files[0] });
+  // };
 
-  addImg = (e) => {
-    e.preventDefault();
+  addImg = (files) => {
     const formData = new FormData();
-    formData.append('image', this.state.file);
+    formData.append('image', files[0]);
     fetch(`${SRV_URL}/upload`, {
       method: 'POST',
       body: formData,
     }).then(res => res.json())
       .then(({ $loki }) => {
         this.socket.emit('new', { id: $loki, url: `${SRV_URL}/images/${$loki}` });
-        this.setState({ file: null });
       });
   };
 
@@ -96,20 +92,24 @@ export default class Picturama extends React.Component {
   };
 
   render() {
+    let dropzoneRef;
     return (
       <div>
-        {/* eslint-disable-next-line */}
-        <h4>{this.props.user}</h4>
-        <form className="inline-form" onSubmit={this.addImg}>
-          <div className="form-group">
-            <label htmlFor="imageInput">File input</label>
-            <input type="file" className="form-control-file" id="imageInput" name="image" onChange={this.onInput} required/>
-          </div>
-          <button className="btn btn-primary">Add</button>
-        </form>
-        <div className="rounded border position-relative" style={{ width: '700px', height: '700px' }}>
+        <Dropzone
+          disableClick
+          style={{ position: 'relative', width: '700px', height: '700px' }}
+          className="border border-primary"
+          activeClassName="border border-success"
+          rejectClassName="border border-danger"
+          accept="image/jpeg, image/png, image/gif"
+          onDrop={this.addImg}
+          ref={(node) => { dropzoneRef = node; }}
+        >
           {this.state.images.map(this.renderImg)}
-        </div>
+        </Dropzone>
+        <button className="btn btn-primary mt-2" onClick={() => dropzoneRef.open() }>
+          Open File Dialog
+        </button>
       </div>
     );
   }
