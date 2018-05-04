@@ -1,8 +1,9 @@
 import io from 'socket.io-client';
 import React from 'react';
 import Draggable from 'react-draggable';
+import { SRV_URL } from './Picturama.jsx';
+import Img from './containers/Img.jsx';
 
-const SRV_URL = 'http://localhost:3000';
 
 const getThrottled = (socket, delay) => {
   let previousCall = new Date().getTime();
@@ -15,20 +16,18 @@ const getThrottled = (socket, delay) => {
   };
 };
 
-function findMinSizeBoard() {
-  return Math.min(
-    document.documentElement.clientWidth * 0.75,
-    document.documentElement.clientHeight * 0.75,
-  );
-}
+const findSizeBoard = () => Math.min(
+  document.documentElement.clientWidth * 0.75,
+  document.documentElement.clientHeight * 0.75,
+);
 
-export default class Picturama extends React.Component {
+export default class Whiteboard extends React.Component {
   state = {
     activeDrags: 0,
     inputURL: '',
     images: [],
     coordinates: {},
-    minSizeBoard: 0,
+    sizeBoard: 0,
     idImgSelected: null,
   };
   socket = io.connect(SRV_URL, { reconnection: false })
@@ -40,7 +39,7 @@ export default class Picturama extends React.Component {
       });
     })
     .on('select', ({ user, idImg }) => {
-      console.log(user);
+      console.log('select');
       const img = document.querySelector(`img[id='${idImg}']`).parentElement;
       img.style.border = `2px solid ${user.color}`;
       if (user.login === this.props.user.login) {
@@ -57,8 +56,8 @@ export default class Picturama extends React.Component {
       const imgPosition = JSON.parse(imgPositionPct);
       const id = Object.keys(imgPosition)[0];
       const { xPct, yPct } = imgPosition[id];
-      const x = (xPct * this.state.minSizeBoard) / 100;
-      const y = (yPct * this.state.minSizeBoard) / 100;
+      const x = (xPct * this.state.sizeBoard) / 100;
+      const y = (yPct * this.state.sizeBoard) / 100;
       const position = {};
       position[id] = { x, y };
       this.setState({ coordinates: { ...this.coordinates, ...position } });
@@ -73,17 +72,18 @@ export default class Picturama extends React.Component {
   };
 
   onControlledDrag = (id, delay = 15) => {
-    const throttledEmit = getThrottled(this.socket, delay);
-    return (e, position) => {
-      const { coordinates } = this.state;
-      const { x, y } = position;
-      this.setState({ coordinates: { ...coordinates, [id]: { x, y } } });
-      const xPct = (100 * x) / this.state.minSizeBoard;
-      const yPct = (100 * y) / this.state.minSizeBoard;
-      throttledEmit('drag', { [id]: { xPct, yPct } });
-    };
+    if (id === this.state.idImgSelected) {
+      const throttledEmit = getThrottled(this.socket, delay);
+      return (e, position) => {
+        const { coordinates } = this.state;
+        const { x, y } = position;
+        this.setState({ coordinates: { ...coordinates, [id]: { x, y } } });
+        const xPct = (100 * x) / this.state.sizeBoard;
+        const yPct = (100 * y) / this.state.sizeBoard;
+        throttledEmit('drag', { [id]: { xPct, yPct } });
+      };
+    }
   };
-
   onInput = (e) => {
     e.preventDefault();
     this.setState({ inputURL: e.target.value });
@@ -98,6 +98,8 @@ export default class Picturama extends React.Component {
   renderImg = ({ url, id }) => {
     const boxStyle = { width: '28%', heigth: '28%', cursor: 'move' };
     const position = this.state.coordinates[id];
+    const disabled = this.state.idImgSelected === id;
+    console.log(disabled);
     return (
       <Draggable
         key={id}
@@ -106,7 +108,6 @@ export default class Picturama extends React.Component {
         onDrag={this.onControlledDrag(id)}
         position={position}
         bounds="parent"
-        disabled={ this.state.idImgSelected !== id }
       >
         <div style={boxStyle}>
           <img
@@ -124,7 +125,6 @@ export default class Picturama extends React.Component {
     if (this.props.user.login) {
       const idImg = target.id;
       if (idImg !== this.state.idImgSelected) {
-        console.log(idImg);
         this.socket.emit('select', {
           user: this.props.user,
           idImg,
@@ -132,7 +132,7 @@ export default class Picturama extends React.Component {
       }
     }
   };
-  unSelect = () => {
+  handleUnSelect = () => {
     if (this.state.idImgSelected) {
       const img = document.querySelector(`img[id='${this.state.idImgSelected}']`).parentElement;
       img.style.border = 'none';
@@ -147,40 +147,43 @@ export default class Picturama extends React.Component {
   };
   componentDidMount() {
     this.setState({
-      minSizeBoard: findMinSizeBoard(),
+      sizeBoard: findSizeBoard(),
     });
     window.onresize = () => {
       const coordinates = [];
-      Object.keys(this.state.coordinates).forEach((img) => {
-        const imgX = (this.state.coordinates[img].x * findMinSizeBoard()) / this.state.minSizeBoard;
-        const imgY = (this.state.coordinates[img].y * findMinSizeBoard()) / this.state.minSizeBoard;
-        coordinates.push({ img: { imgX, imgY } });
-        this.setState({ ...coordinates });
+      Object.keys(this.state.coordinates).forEach((idImg) => {
+        const imgX = (this.state.coordinates[idImg].x * findSizeBoard()) / this.state.sizeBoard;
+        const imgY = (this.state.coordinates[idImg].y * findSizeBoard()) / this.state.sizeBoard;
+        coordinates[idImg] = { x: imgX, y: imgY };
       });
       this.setState({
-        minSizeBoard: findMinSizeBoard(),
+        sizeBoard: findSizeBoard(),
+        coordinates: { ...coordinates },
       });
     };
   }
   render() {
-    const { user } = this.props;
-    const { minSizeBoard, images } = this.state;
+    const { user, users } = this.props;
+    const { sizeBoard, images } = this.state;
     return (
       <div>
         <h4 style={{ color: user.color }}>{user.login}</h4>
+        <ul>
+          {users.map(({ login, color }, index) =>
+            <li key={index} style={{ color: color }}>{login}</li>)}
+        </ul>
         <form className="inline-form" onSubmit={this.addImg}>
           <input type="text" value={this.state.inputURL} onChange={this.onInput}/>
           <button className="btn btn-primary">Add</button>
         </form>
         <div className="rounded border position-relative" style={{
-          width: `${minSizeBoard}px`,
-          height: `${minSizeBoard}px`,
-        }}
-        >
+          width: `${sizeBoard}px`,
+          height: `${sizeBoard}px`,
+        }}>
           {images.map(this.renderImg)}
         </div>
         <br/>
-        <button onClick={this.unSelect} className="btn btn-primary">UnSelect</button>
+        <button onClick={this.handleUnSelect} className="btn btn-primary">UnSelect</button>
       </div>
     );
   }

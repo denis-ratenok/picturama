@@ -9,7 +9,7 @@ import runIO from './io';
 const compiler = webpack(config);
 const app = express();
 
-const users = [];
+export const users = [];
 const colors = ['#DC1010', '#005DC7', '#00C7B3', '#00C70D', '#EFFF07', '#F807FF', 'FF7307', '#07924C'];
 
 app.use(bodyParser.json());
@@ -25,9 +25,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.post('/login', (req, res) => {
   const { login } = req.body;
-  const onExist = users.find((user) => {
-    return user.login === login;
-  });
+  const onExist = users.find(user => user.login === login);
   if (!onExist) {
     const idColor = users.length;
     users.push({
@@ -39,7 +37,7 @@ app.post('/login', (req, res) => {
       color: colors[idColor],
     });
   } else {
-    res.send(onExist);
+    res.status(206).send(onExist);
   }
 });
 

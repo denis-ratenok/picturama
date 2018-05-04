@@ -43,6 +43,10 @@ export default (server) => {
       selected.splice(idPair, 1);
       socket.broadcast.emit('unSelect', idImg);
     });
+    socket.on('newUser', (user) => {
+      socket.emit('newUser', user);
+      socket.broadcast.emit('newUser', user);
+    });
     socket.on('disconnect', () => {
       sockets = sockets.filter(s => s !== socket);
     });
