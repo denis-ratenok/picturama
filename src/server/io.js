@@ -13,7 +13,6 @@ export default (server) => {
       socket.broadcast.emit('new', img);
     });
     socket.on('drag', (imgPosition) => {
-      // console.log(imgPosition);
       socket.broadcast.emit('dragsrv', imgPosition);
     });
     socket.on('disconnect', () => {
