@@ -2,7 +2,7 @@ import io from 'socket.io-client';
 import React from 'react';
 import Draggable from 'react-draggable';
 import Dropzone from 'react-dropzone';
-import { filter, find } from 'lodash';
+import update from 'immutability-helper';
 
 const SRV_URL = 'http://localhost:3000';
 
@@ -23,37 +23,32 @@ export default class Whiteboard extends React.Component {
   };
 
   socket = io.connect(SRV_URL, { reconnection: false })
-    .on('s_new', (img) => {
-      const { images } = this.state;
-      this.setState({ images: [...images, img] });
-    })
-    .on('s_drag', (img) => {
-      const rest = filter(this.state.images, ({ id }) => img.id !== id);
-      this.setState({ images: [...rest, img] });
-    });
+    .on('s_new', img => this.addNewImg(img))
+    .on('s_drag', img => this.setPosition(img));
 
-  getImg = id => find(this.state.images, { id });
+  setPosition = (img) => {
+    const { images } = this.state;
+    const index = images.findIndex(({ id }) => img.id === id);
+    const newImages = update(images, { [index]: { $merge: img } });
+    this.setState({ images: newImages });
+  };
 
-  getRest = id => filter(this.state.images, obj => obj.id !== id);
+  addNewImg = (img) => {
+    const { images } = this.state;
+    this.setState({ images: [...images, img] });
+  };
 
-  onStop = id => () => this.socket.emit('set_db_position', this.getImg(id));
+  onStop = id => (e, { x, y }) =>
+    this.socket.emit('set_db_position', { id, position: { x, y } });
 
   onControlledDrag = (id) => {
     const throttledEmit = getThrottled(this.socket);
     return (e, { x, y }) => {
-      const rest = this.getRest(id);
-      const oldImg = this.getImg(id);
-      const newImg = { ...oldImg, position: { x, y } };
-      this.setState({ images: [...rest, newImg] });
-      throttledEmit('c_drag', newImg);
+      const img = { id, position: { x, y } };
+      this.setPosition(img);
+      throttledEmit('c_drag', img);
     };
   };
-
-  addNewImg = (img) => {
-    this.socket.emit('c_new', img);
-    const { images } = this.state;
-    this.setState({ images: [...images, img] });
-  }
 
   uploadImg = (files) => {
     const formData = new FormData();
@@ -62,7 +57,10 @@ export default class Whiteboard extends React.Component {
       method: 'POST',
       body: formData,
     }).then(res => res.json())
-      .then(this.addNewImg);
+      .then((img) => {
+        this.addNewImg(img);
+        this.socket.emit('c_new', img);
+      });
   };
 
   renderImages = ({ id, url, position }) => {
