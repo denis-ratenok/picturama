@@ -1,5 +1,6 @@
 import express from 'express';
 import webpack from 'webpack';
+import path from 'path';
 import webpackDevMiddleware from 'webpack-dev-middleware';
 import webpackHotMiddleware from 'webpack-hot-middleware';
 import bodyParser from 'body-parser';
@@ -41,8 +42,9 @@ app.post('/login', (req, res) => {
   }
 });
 
-// Include server routes as a middleware
-app.use(express.static('dist/client'));
+app.get('/*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../dist/client', 'index.html'));
+});
 
 const server = app.listen(3000, () => console.log('Picturama listening on port 3000!'));
 runIO(server);

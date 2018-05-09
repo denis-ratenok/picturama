@@ -4,6 +4,7 @@ import { uniqueId } from 'lodash';
 import socketio from 'socket.io';
 
 const selected = [];
+const images =[];
 
 export default (server) => {
   // const MSG = 'HI All!';

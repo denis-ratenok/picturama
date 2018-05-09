@@ -1,8 +1,8 @@
 import io from 'socket.io-client';
 import React from 'react';
+import { Link } from 'react-router-dom';
 import Draggable from 'react-draggable';
 import { SRV_URL } from './Picturama.jsx';
-import Img from './containers/Img.jsx';
 
 
 const getThrottled = (socket, delay) => {
@@ -22,14 +22,19 @@ const findSizeBoard = () => Math.min(
 );
 
 export default class Whiteboard extends React.Component {
-  state = {
-    activeDrags: 0,
-    inputURL: '',
-    images: [],
-    coordinates: {},
-    sizeBoard: 0,
-    idImgSelected: null,
-  };
+  constructor(props) {
+    super(props);
+    this.state = {
+      activeDrags: 0,
+      inputURL: '',
+      images: [],
+      coordinates: {},
+      sizeBoard: 0,
+      idImgSelected: null,
+    };
+    this.handleExit = this.handleExit.bind(this);
+  }
+
   socket = io.connect(SRV_URL, { reconnection: false })
     .on('new', (img) => {
       const { images, coordinates } = this.state;
@@ -98,8 +103,6 @@ export default class Whiteboard extends React.Component {
   renderImg = ({ url, id }) => {
     const boxStyle = { width: '28%', heigth: '28%', cursor: 'move' };
     const position = this.state.coordinates[id];
-    const disabled = this.state.idImgSelected === id;
-    console.log(disabled);
     return (
       <Draggable
         key={id}
@@ -162,6 +165,9 @@ export default class Whiteboard extends React.Component {
       });
     };
   }
+  handleExit(event) {
+    this.props.onHandleExit(event);
+  }
   render() {
     const { user, users } = this.props;
     const { sizeBoard, images } = this.state;
@@ -184,6 +190,8 @@ export default class Whiteboard extends React.Component {
         </div>
         <br/>
         <button onClick={this.handleUnSelect} className="btn btn-primary">UnSelect</button>
+        <Link onClick={this.handleExit} to="/registration" className="btn btn-primary">Exit</Link>
+        <Link to="/registration" className="btn btn-primary">Registration</Link>
       </div>
     );
   }

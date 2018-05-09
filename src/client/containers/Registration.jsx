@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default class Registration extends React.Component {
   constructor(props) {
@@ -23,7 +24,7 @@ export default class Registration extends React.Component {
           Name:
           <input type="text" value={valueLogin} onChange={this.handleChange} />
         </label>
-        <input type="submit" value="Submit" className="btn btn-primary" />
+        <Link onClick={this.handleSubmit} to="/app" className="btn btn-primary">app</Link>
       </form>
     );
   }

@@ -1,8 +1,10 @@
 import React, { Component } from 'react';
 import io from 'socket.io-client';
 import axios from 'axios';
+import { Switch, Route } from 'react-router-dom';
 import Whiteboard from './Whiteboard.jsx';
 import Registration from './containers/Registration.jsx';
+
 
 export const SRV_URL = 'http://localhost:3000';
 
@@ -18,24 +20,30 @@ export default class Picturama extends Component {
       this.setState({ users: [...this.state.users, user] });
       console.log(this.state.users);
     });
-  handleSubmit(e) {
+  handleSubmit() {
     axios.post('/login', {
       login: this.state.valueLogin,
     })
       .then((res) => {
-        console.log(res);
-        if (res.statusText === 'Partial Content') {
+        const onExist = this.state.users.find(user => user.login === res.data.login);
+        if (onExist) {
           this.setState({ user: res.data });
-        } else if (res.statusText === 'OK') {
+        } else {
           this.setState({ user: res.data });
-          this.setState({ users: [...this.state.users, res.data] });
+          this.socket.emit('newUser', res.data);
         }
       })
       .catch((error) => {
         console.log(error);
       });
     this.setState({ valueLogin: '' });
-    e.preventDefault();
+  }
+  handleExit() {
+    const indexExitUser = this.state.users.findIndex(user => user === this.user.login);
+    this.setState({
+      user: '',
+      users: this.state.users.splice(indexExitUser, 1),
+    });
   }
 
   handleChange({ target }) {
@@ -47,12 +55,17 @@ export default class Picturama extends Component {
     const { valueLogin, user, users } = this.state;
     return (
       <div className="container">
-        <Registration valueLogin={valueLogin}
-                      onLoginChange={this.handleChange.bind(this)}
-                      onFormSubmit={this.handleSubmit.bind(this)} />
-        <Whiteboard user={user} users={users} />
+        <Switch>
+          <Route exact path='/registration' render={() => <Registration
+            valueLogin={valueLogin}
+            onLoginChange={this.handleChange.bind(this)}
+            onFormSubmit={this.handleSubmit.bind(this)} />} />
+          <Route exact path='/app' render={() => <Whiteboard
+            user={user}
+            users={users}
+            onHandleExit={this.handleExit.bind(this)}/>}/>
+        </Switch>
       </div>
-
     );
   }
 }
