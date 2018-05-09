@@ -27,15 +27,21 @@ export default (db) => {
   const upload = multer({ storage, fileFilter });
 
   router.post('/upload', upload.single('image'), (req, res) => {
-    const { $loki } = db.getCollection('images').insert(req.file);
+    const { path, mimetype } = req.file;
+    const position = { x: 10, y: 10 };
+    const images = db.getCollection('images');
+    const img = images.insert({ path, position, mimetype });
+    img.url = `images/${img.$loki}`;
+    images.update(img);
     res.json({
-      message: 'File uploaded successfully',
-      $loki,
+      id: img.$loki,
+      url: img.url,
+      position,
     });
   });
 
-  router.get('/images/:id', (req, res) => {
-    const img = db.getCollection('images').findOne({ $loki: Number(req.params.id) });
+  router.get('/images/:id', ({ params: { id } }, res) => {
+    const img = db.getCollection('images').get(Number(id), false);
     if (!img) {
       res.sendStatus(404);
       return;

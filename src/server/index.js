@@ -28,4 +28,4 @@ app.use(express.static(STATIC_FILES));
 app.use(uploader);
 
 const server = app.listen(PORT, () => console.log(`Picturama listening on port ${PORT}!`));
-runIO(server);
+runIO(server, db);
