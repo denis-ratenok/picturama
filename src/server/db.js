@@ -6,9 +6,13 @@ export default (DB_PATH) => {
     autoloadCallback() {
       // console.log('collection CB');
       let images = db.getCollection('images');
+      let users = db.getCollection('users');
       if (images === null) {
-        // console.log('creating collection');
         images = db.addCollection('images');
+      }
+      if (users === null) {
+        console.log('creating collection users');
+        users = db.addCollection('users');
       }
     },
     autosave: true,

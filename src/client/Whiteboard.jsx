@@ -3,8 +3,8 @@ import React from 'react';
 import Draggable from 'react-draggable';
 import Dropzone from 'react-dropzone';
 import update from 'immutability-helper';
-
-const SRV_URL = 'http://localhost:3000';
+import { Link } from 'react-router-dom';
+import { SRV_URL } from './Picturama.jsx';
 
 const getThrottled = (socket, delay = 15) => {
   let previousCall = new Date().getTime();
@@ -104,6 +104,7 @@ export default class Whiteboard extends React.Component {
         <button className="btn btn-primary mt-2" onClick={() => dropzoneRef.open() }>
           Open File Dialog
         </button>
+        <Link to="/registration" className="btn btn-primary mt-2">Registration</Link>
       </div>
     );
   }
