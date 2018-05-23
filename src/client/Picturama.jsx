@@ -1,53 +1,69 @@
-import React from 'react';
-import io from 'socket.io-client';
-import { Switch, Route, Redirect } from 'react-router';
+import React, { Component } from 'react';
+import { Route } from 'react-router';
 import Whiteboard from './Whiteboard.jsx';
 import Registration from './containers/Registration.jsx';
 
 export const SRV_URL = 'http://localhost:3000';
 
-export default class Picturama extends React.Component {
-  state = {
-    user: {},
-    valueLogin: '',
-    users: '',
-  };
+export default class Picturama extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      user: {},
+      valueInputLogin: '',
+      color: '',
+    };
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleExit = this.handleExit.bind(this);
+  }
 
   handleChange({ target }) {
-    this.setState({ valueLogin: target.value });
+    this.setState({ valueInputLogin: target.value });
   }
+
   handleSubmit(e) {
+    const { valueInputLogin } = this.state;
+    if (valueInputLogin) {
+      const user = {
+        login: valueInputLogin,
+        connect: false,
+      };
+      this.setState({ valueInputLogin: '' });
+      fetch('/login', {
+        method: 'POST',
+        body: JSON.stringify(user),
+        headers: { 'Content-Type': 'application/json' },
+      }).then(res => res.json())
+        .then((data) => { this.setState({ user: data }); });
+    }
     e.preventDefault();
-    const user = {
-      login: this.state.valueLogin,
-    };
-    fetch('/login', {
-      method: 'POST',
-      body: JSON.stringify(user),
-    }).then((res) => {
-      this.socket = io.connect(SRV_URL, { reconnection: false });
-    });
   }
+
+  handleExit() {
+    this.setState({ user: {} });
+  }
+
   render() {
-    const { valueLogin, user } = this.state;
+    const { valueInputLogin, user } = this.state;
     return (
       <div className="container">
-        <Switch>
-          <Route exact path="/" render={() => (
-            userName ? (
-              <Redirect to="/app"/>
+        <Route path="/" render={() => (
+          user.login ? (
+            <Whiteboard
+              handleExit={this.handleExit}
+              user={user}
+            />
             ) : (
-              <Redirect to="/registration"/>
+            <Registration
+              user={user}
+              valueInputLogin={valueInputLogin}
+              onFormSubmit={this.handleSubmit}
+              onLoginChange={this.handleChange}
+            />
             )
           )}/>
-          <Route exact path='/registration' render={() => <Registration
-            valueLogin={valueLogin}
-            onLoginChange={this.handleChange.bind(this)}
-            onFormSubmit={this.handleSubmit.bind(this)} />} />
-          <Route exact path='/app' render={() => <Whiteboard
-            user={user}
-            /*onHandleExit={this.handleExit.bind(this)}*//>}/>
-        </Switch>
       </div>
     );
   }

@@ -28,7 +28,7 @@ export default (db) => {
 
   router.post('/upload', upload.single('image'), (req, res) => {
     const { path, mimetype } = req.file;
-    const position = { x: 10, y: 10 };
+    const position = { xPercent: 0, yPercent: 0 };
     const images = db.getCollection('images');
     const img = images.insert({ path, position, mimetype });
     img.url = `images/${img.$loki}`;

@@ -16,8 +16,9 @@ const db = getDB(DB_PATH);
 const uploader = getUploader(db);
 const login = getLogin(db);
 
-app.use(bodyParser.json());
+// app.use(bodyParser.json());
 // app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
 
 // Serve hot-reloading bundle to client if Dev
 if (process.env.NODE_ENV !== 'production') {
